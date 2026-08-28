@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: ankane/pgvector:latest
@@ -12,12 +10,13 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
 
   neo4j:
     image: neo4j:latest
     container_name: mera_neo4j
     environment:
-      NEO4J_AUTH: neo4j/mera_proyecto
+      NEO4J_AUTH: neo4j/mera_proyecto_neo4j
     ports:
       - "7474:7474"
       - "7687:7687"
@@ -26,4 +25,6 @@ services:
 
 volumes:
   pgdata:
+    name: mera-advisor_pgdata
   neo4j_data:
+    name: mera-advisor_neo4j_data
