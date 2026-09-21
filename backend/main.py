@@ -1,11 +1,25 @@
 from fastapi import FastAPI
 from sqlalchemy import text
 from backend.database import engine
+from backend.comercial import router as comercial_router
+from backend.transporte import router as transporte_router
+from backend.operacion import router as operacion_router
+from backend.riesgos import router as riesgos_router
+from backend.normatividad import router as normatividad_router
+from backend.experiencia import router as experiencia_router
 
 app = FastAPI(
     title="MERA Advisor - Motor Cognitivo ANA",
     version="1.0.0"
 )
+
+# Registro de todas las capas cognitivas del motor
+app.include_router(comercial_router)
+app.include_router(transporte_router)
+app.include_router(operacion_router)
+app.include_router(riesgos_router)
+app.include_router(normatividad_router)
+app.include_router(experiencia_router)
 
 @app.get("/")
 def read_root():
