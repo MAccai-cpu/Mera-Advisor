@@ -1,16 +1,40 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from backend.database import SessionLocal
+from backend.models import EvaluacionRiesgoModel
 
-router = APIRouter(prefix="/capa-c", tags=["Capa C - Operación"])
+router = APIRouter(prefix="/capa-d", tags=["Capa D - Riesgos"])
 
-@router.get("/directrices")
-def obtener_directrices_operativas():
-    """Retorna las directrices operativas de la Capa C"""
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+class RiesgoSchema(BaseModel):
+    nivel_riesgo: str
+    factor_riesgo: str
+    recomendacion: str
+
+@router.get("/evaluaciones")
+def obtener_riesgos(db: Session = Depends(get_db)):
+    riesgos = db.query(EvaluacionRiesgoModel).all()
     return {
-        "capa": "C - Operación",
-        "descripcion": "Directrices operativas y de ejecución de MERA Advisor",
-        "directrices": [
-            "Supervisión y control de procesos logísticos diarios",
-            "Coordinación de tiempos de entrega y asignación de recursos",
-            "Mitigación de cuellos de botella en la cadena operativa"
-        ]
+        "capa": "D - Riesgos",
+        "total": len(riesgos),
+        "evaluaciones": [{"id": r.id, "nivel": r.nivel_riesgo, "factor": r.factor_riesgo, "recomendacion": r.recomendacion} for r in riesgos]
     }
+
+@router.post("/evaluaciones")
+def crear_riesgo(riesgo: RiesgoSchema, db: Session = Depends(get_db)):
+    nuevo = EvaluacionRiesgoModel(
+        nivel_riesgo=riesgo.nivel_riesgo,
+        factor_riesgo=riesgo.factor_riesgo,
+        recomendacion=riesgo.recomendacion
+    )
+    db.add(nuevo)
+    db.commit()
+    db.refresh(nuevo)
+    return {"mensaje": "Evaluación de riesgo registrada con éxito", "riesgo": {"id": nuevo.id, "factor": nuevo.factor_riesgo}}

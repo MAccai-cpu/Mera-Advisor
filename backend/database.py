@@ -1,27 +1,41 @@
 import os
+from pathlib import Path
 from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from neo4j import GraphDatabase
 from dotenv import load_dotenv
 
-# Cargar las variables del archivo .env ubicado en la raíz del proyecto
-load_dotenv(os.path.join(os.path.dirname(__file__), '../.env'))
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(dotenv_path=BASE_DIR / ".env", override=True)
 
-POSTGRES_USER = os.getenv("POSTGRES_USER", "mera_user")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "mera_proyecto")
-POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
-POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
-POSTGRES_DB = os.getenv("POSTGRES_DB", "mera_advisor_db")
+# --- SQLAlchemy (PostgreSQL / Relacional) ---
+pg_user = os.getenv("POSTGRES_USER", "mera_user")
+pg_pass = os.getenv("POSTGRES_PASSWORD", "mera_proyecto")
+pg_host = os.getenv("POSTGRES_HOST", "localhost")
+pg_port = os.getenv("POSTGRES_PORT", "5432")
+pg_db = os.getenv("POSTGRES_DB", "mera_advisor_db")
 
-DATABASE_URL = f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
-
-# Crear el motor de conexión SQLAlchemy
+DATABASE_URL = f"postgresql://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/{pg_db}"
 engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-def get_db():
-    """Dependencia para obtener la sesión de base de datos"""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# --- Neo4j Aura (Nube - Conexión Directa Forzada) ---
+NEO4J_URI = "bolt://19e7e3c7.databases.neo4j.io:7687"
+NEO4J_USER = "neo4j"
+NEO4J_PASSWORD = "tm2gPDBjlt3lF_Fh6pugGo3B9JB2wzxvUvocgtrtGnQ"
+
+_driver = None
+
+def get_driver():
+    global _driver
+    if _driver is None:
+        # Forzamos la conexión directa mediante bolt con cifrado SSL habilitado para la nube
+        _driver = GraphDatabase.driver(
+            NEO4J_URI, 
+            auth=(NEO4J_USER, NEO4J_PASSWORD),
+            encrypted=True
+        )
+    return _driver
